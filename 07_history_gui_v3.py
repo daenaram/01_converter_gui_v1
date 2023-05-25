@@ -1,5 +1,7 @@
 from tkinter import *
 from functools import partial  # To prevent unwanted windows
+from datetime import date
+import re
 
 
 class Converter:
@@ -47,14 +49,17 @@ class HistoryExport:
 
     def __init__(self, partner, calc_list):
 
-        print(calc_list)
-
         # set maximum number of calculations to 5
         # this can be changed if we want to show fewer /
         # more calculations
         max_calcs = 5
         self.var_max_calcs = IntVar()
         self.var_max_calcs.set(max_calcs)
+
+        # Set variables to hold filename and date
+        # for when writing to file
+        self.var_filename = StringVar()
+        self.var_todays_date = StringVar()
 
         # Function converts contents pf calculation list
         # into string.
@@ -145,7 +150,8 @@ class HistoryExport:
         self.export_button = Button(self.button_frame,
                                     font=("Arial", "12", "bold"),
                                     text="Export", bg="#004C99",
-                                    fg="#FFFFFF", width=12)
+                                    fg="#FFFFFF", width=12,
+                                    command=self.make_file)
         self.export_button.grid(row=0, column=0, padx=10, pady=10)
 
         self.dismiss_button = Button(self.button_frame,
@@ -185,6 +191,61 @@ class HistoryExport:
         calc_string += var_calculations[-max_calcs]
 
         return calc_string
+
+    def make_file(self):
+        # retrieves filename
+        filename = self.filename_entry.get()
+
+        filename_ok = ""
+
+        if filename == "":
+            # get date and create default filename
+            date_part = self.get_date()
+            filename = "{}_temperature_calculations".format(date_part)
+
+        else:
+            # check that filename is valid
+            filename_ok = self.check_filename(filename)
+
+        if filename_ok == "":
+            filename += ".txt"
+            self.filename_error_label.config(text="You are OK")
+
+        else:
+            self.filename_error_label.config(text=filename_ok)
+
+    # retrieves date and creates YYYY_MM_DD string
+    def get_date(self):
+        today = date.today()
+
+        day = today.strftime("%d")
+        month = today.strftime("%m")
+        year = today.strftime("%Y")
+
+        todays_date = "{}/{}/{}".format(day, month, year)
+        self.var_todays_date.set(todays_date)
+
+        return "{}/{}/{}".format(day, month, year)
+
+    def check_filename(self, filename):
+        problem = ""
+
+        # Regular expression to check filename is valid
+        valid_char = "[A-Za-z0-9_]"
+
+        # iterates through filename and checks each letter.
+        for letter in filename:
+            if re.match(valid_char, letter):
+                continue
+
+            elif letter == " ":
+                problem = "Sorry, no space allowed"
+
+            else:
+                problem = ("Sorry, no {}'s allowed".format(letter))
+            break
+
+        return problem
 
     # closes help dialogue (used by button and x at top of dialogue)
     def close_history(self, partner):
